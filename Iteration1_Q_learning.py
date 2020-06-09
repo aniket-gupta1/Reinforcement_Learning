@@ -1,58 +1,62 @@
 import gym
-import time
-import numpy as np 
-import matplotlib.pyplot as plt 
-from collections import defaultdict
 import itertools
-import sys
+import numpy as np
 
 env = gym.make("MountainCar-v0")
 env.reset()
 
+# Making the observation space discrete
 Discrete_size = [20] * len(env.observation_space.high)
 Discrete_obs_space_size = (env.observation_space.high - env.observation_space.low) / Discrete_size
-
-print(env.goal_position)
-done = False
 
 def get_discrete_states(state):
 	return tuple(((state - env.observation_space.low)/Discrete_obs_space_size).astype(np.int))
 
 def q_learning(env, num_episodes, discount_factor=0.95, alpha=0.1, epsilon=0.1):
-	# The final action-value function.
-	# A nested dictionary that maps state -> (action -> action-value).
+	
+	# Initialize the Q-table 
+	"""
+	Q-table contains the expected discounted sum of rewards for each state-action pair
+	"""
 	Q = np.zeros((20,20,3))
-	#Q = np.random.uniform(low=-2, high=0, size=(20,20,3))
-	#print(Q.shape)
-	# Keeps track of useful statistics
+
+	done = False 								# Initialize the done signal
 	episode_lengths = np.zeros(num_episodes)
 	episode_rewards = np.zeros(num_episodes)
 	
 	for i_episode in range(num_episodes):
-		# Print out which episode we're on, useful for debugging.
+
+		# Print out which episode we're on
 		if (i_episode + 1) % 1 == 0:
-			print("\rEpisode {}/{}.".format(i_episode + 1, num_episodes), end="")
-			sys.stdout.flush()
+			print(f"\rEpisode {i_episode + 1}/{num_episodes}")
 		
-		# Reset the environment
+		# Reset the environment and observe the starting state
 		state = get_discrete_states(env.reset())
 		
-		# One step in the environment
-		# total_reward = 0.0
+		# Loop till done signal becomes true
 		for t in itertools.count():
-			# Take a step
+
+			# Select action through epsilon-greedy policy
 			rand_prob = np.random.rand()
 			if epsilon>rand_prob:
 				action = np.random.randint(0, env.action_space.n)
 			else:
 				action = np.argmax(Q[state])
 
-			next_s, reward, done, _ = env.step(action)
-			next_state = get_discrete_states(next_s)
+			# Observe next_state, reward and done signal
+			next_state, reward, done, _ = env.step(action)
+
+			# Very critical step!
+			state = next_state
+
+			# Make the observed state discrete
+			next_state = get_discrete_states(next_state)
+
+			# Render the environment to see the performance of the algorithm
 			if i_episode%2000 == 0:
 				env.render()
 
-			# Update statistics
+			# Good old book-keeping
 			episode_rewards[i_episode] += reward
 			episode_lengths[i_episode] = t
 			
@@ -61,19 +65,15 @@ def q_learning(env, num_episodes, discount_factor=0.95, alpha=0.1, epsilon=0.1):
 			td_delta = td_target - Q[state][action]
 			Q[state][action] += alpha * td_delta
 			
+			# Find out if we actually reached the goal position
 			if next_s[0] >= env.goal_position:
 				print("We made it on episode: {}".format(i_episode))
-				sys.stdout.flush()
 				Q[state][action] = 0
+			
 			if done:
 				break
-			
-				
-			state = next_state
-	
-	return Q, stats
 
-Q, stats = q_learning(env, 25000)
+q_learning(env, 25000)
 
 print("Closing environment")
 env.close()
