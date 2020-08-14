@@ -60,8 +60,8 @@ class ReplayMemory():
 	def can_provide_sample(self, batch_size):
 		return len(self.memory) >= batch_size
 
-class DDPG():
-	"""Class to train a policy network using the DDPG algorithm"""
+class TD3():
+	"""Class to train a policy network using the TD3 algorithm"""
 	def __init__(self, env_name, env, Actor_net, Critic_net1, Critic_net2, act_dim, obs_dim ,lam = 0.97,decay = False,
 				Actor_lr = 0.0001, gamma = 0.99, delta = 0.01, Critic_lr = 0.001, render = False, epoch_steps = 2000, 
 				value_train_iterations = 5, memory_size = 100000, polyak_const = 0.995, minibatch_size = 100):
@@ -275,7 +275,7 @@ if __name__ == "__main__":
 	Critic_net2 = Model((obs_dim+act_dim,), 1, 'relu', 'linear', [400,300])
 	#print(Critic_net.summary())
 
-	agent = DDPG(env_name, env, Actor_net, Critic_net1, Critic_net2, decay = False, render=False, act_dim = act_dim, obs_dim = obs_dim)
+	agent = TD3(env_name, env, Actor_net, Critic_net1, Critic_net2, decay = False, render=False, act_dim = act_dim, obs_dim = obs_dim)
 	episodes = int(sys.argv[2]) if sys.argv[2] else int(200)
 
 	if sys.argv[3] == "test":
